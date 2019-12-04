@@ -1,0 +1,54 @@
+---
+title: "Maps"
+author: "Erin Guetzloe"
+date: "12/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggmap)
+library(ggthemes)
+library(gganimate)
+
+a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")
+
+```
+
+```{r}
+
+map1 <- a %>%
+  mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  filter(year != 2013) %>%
+  filter(year != 2018) %>%
+  filter(state == "Massachusetts") %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"))
+
+register_google(key = "**************************")
+
+p <- ggmap(get_googlemap(center = c(lon = -71.1, lat = 42.3),
+
+                    zoom = 11, scale = 2, size = c(640,640),
+
+                    maptype ='roadmap',
+
+                    color = 'color'))
+
+graphic_GB_Google <- p + geom_point(aes(x = longitude, y = latitude), data = map1, size = 0.5) +
+
+  transition_manual(map1$year) +
+
+  labs(title = "Incidents of Gun Violence in Greater Boston 2014-2017",
+
+       subtitle = "Year: {current_frame}",
+
+       caption = "Source: City and County of San Francisco") +
+
+  ggthemes::theme_map(base_size = 12)
+
+anim_save("graphic_GB_Google.gif", graphic_GB_Google, "gun-violence-visualizations/")
+
+```
+
