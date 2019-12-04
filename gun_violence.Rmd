@@ -17,13 +17,14 @@ a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")
 
 b <- read_xlsx("raw-data/firearm_restrictions_by_state.xlsx")
 
-c <- read_xlsx("raw-data/firearm_restrictions.xlsx")
+d <- read_xlsx("raw-data/firearm-mortality-state.xlsx")
 
 join <- full_join(a, b)
 
-join2 <- full_join(join, c)
+join2 <- full_join(join, d)
 
 ```
+
 
 ```{r plot 1}
 
@@ -34,8 +35,6 @@ mapping <- a %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
   filter(year != 2018) %>%
   select(year, n_victims)
-
-saveRDS(object = mapping, file = "gun-violence-visualizations/Map1.rds")
 
 plot1 <- ggplot(mapping, aes(x = year, y = n_victims)) +
   geom_col() +
@@ -64,7 +63,67 @@ ggplotly(plot2)
 
 ```{r}
 
-#regression <- glm(n_victims ~ lawtotal)
+mapping3 <- a %>%
+  mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  filter(state == "Massachusetts") %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
+  filter(year != 2013) %>%
+  filter(year != 2018) %>%
+  select(year, n_killed)
+
+plot3 <- ggplot(mapping3, aes(x = year, y = n_killed)) +
+  geom_col() +
+  labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area")
+
+ggplotly(plot3)
+
+```
+
+```{r regression}
+
+regdata <- join2 %>%
+  filter(state == "Massachusetts") %>%
+  filter(year %in% c(2013, 2014, 2015, 2016, 2017)) %>%
+  select(deaths, lawtotal, year) 
+  
+regression <- lm(deaths ~ year, data = regdata, family = "binomial")
+
+graph <- ggplot(regression, aes(x = year, y = deaths)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Massachusetts Deaths from Gun Violence, 2013-2017") +
+  xlab("Year") +
+  ylab("Number of Deaths")
+
+ggplotly(graph)
+
+```
+
+```{r}
+
+mapping4 <- join2 %>%
+  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia")) %>%
+  mutate(city_or_county = ifelse(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"), "Greater Boston", city_or_county))
+
+group <- mapping4 %>%
+  group_by(city_or_county) %>%
+  count()
+
+```
+
+```{r}
+
+mapping5 <- a %>%
+  mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia")) %>%
+  mutate(city_or_county = ifelse(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"), "Greater Boston", city_or_county)) %>%
+  filter(year != 2013) %>%
+  filter(year != 2018) %>%
+  count(city_or_county, year)
+
+saveRDS(object = mapping5, file = "gun-violence-visualizations/violence_by_year.rds")
 
 ```
 
