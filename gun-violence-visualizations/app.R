@@ -2,6 +2,9 @@
 
 library(shiny)
 library(tidyverse)
+library(plotly)
+
+violence_by_year <- readRDS("violence_by_year.rds")
 
 ui <- navbarPage("Gun Violence Data in Boston",
                  tabPanel("About",
@@ -9,7 +12,7 @@ ui <- navbarPage("Gun Violence Data in Boston",
                           p("Boston is a liberal-leaning city in a state with relatively strict gun regulations, in comparison to many other states in the U.S.  Despite this, the Boston community continues to suffer from significant levels of gun violence.  Boston policymakers have expressed concerns about what steps they can take in the future to combat this challenging public safety threat.  Over just five days in July 2019, 17 shootings occurred in the Boston area that left 17 victims wounded.  Mayor Martin Walsh responded, 'We have the toughest gun laws in the country in Massachusetts...we’ve taken 4,000 guns off the street in the last five years.  But all of what we’ve done, you still have a weekend like this. And it makes you think, God, what more can you do? But there has to be more.'  This project aims to compare Massachusetts gun policy with firearm restrictions in other states.  My goal through these comparisons is to understand what policies or other factors Boston lacks that could contribute to this continued gun violence epidemic.  Ultimately, I hope that these visualizations will aid Boston activists, community organizers, and policymakers seeking to better understand new possibilities for action that can be taken to stem the tide of violence.")),
                           
                  tabPanel("Graphics",
-                          plotOutput("plot1"), plotOutput("plot2"), plotOutput("plot3"), plotOutput("graph")),
+                          plotOutput("plot1"), plotOutput("plot2"), plotOutput("plot3"), plotOutput("graph"), plotlyOutput("violence_per_year"), imageOutput("graphic_GB")),
                  tabPanel("Methods",
                           h1("Modeling"),
                           p("I included four graphics: one examining the total number of gun violence victims in the Boston area over the five year period examined, one examining only gun injuries, one examining solely gun deaths, and finally a regression showing increasing levels of gun violence in Boston over the five year period."),
@@ -46,7 +49,64 @@ server <- function(input, output, session) {
             ggtitle("Massachusetts Deaths from Gun Violence, 2013-2017") +
             xlab("Year") +
             ylab("Number of Deaths")
-    )}
+    )
+    output$violence_per_year <- renderPlotly({
+        
+            plot_ly(
+            
+            data = violence_by_year,
+            
+            x = ~year, 
+            
+            y = ~n,
+            
+            color = ~city_or_county,
+            
+            text = ~city_or_county, 
+            
+            hoverinfo = "text",
+            
+            type = 'scatter',
+            
+            mode = 'lines',
+            
+            width = 1000, 
+            
+            height = 500
+            
+        ) %>% 
+            
+            layout(
+                
+                title = 'Number of Violent Crimes in Cities Per Year',
+                
+                xaxis = list(
+                    
+                    title = "Year",
+                    
+                    zeroline = F
+                    
+                ),
+                
+                yaxis = list(
+                    
+                    title = "Violent Crimes",
+                    
+                    zeroline = F
+                    
+                ))
+        
+        
+        
+    })
+    output$graphic_GB <- renderImage({
+        
+        list(src = "graphic_GB_Google.gif",
+             
+             contentType = 'image/gif'
+             
+        )}, deleteFile = FALSE)
+    }
 
 shinyApp(ui, server)
    
