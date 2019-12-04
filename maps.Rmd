@@ -12,6 +12,7 @@ library(tidyverse)
 library(ggmap)
 library(ggthemes)
 library(gganimate)
+library(curl)
 
 a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")
 
@@ -26,7 +27,7 @@ map1 <- a %>%
   filter(state == "Massachusetts") %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"))
 
-register_google(key = "**************************")
+register_google(key = "AIzaSyBsl9mcJqkwdVlx3YOLaO8uhsnR9k-9XSc")
 
 p <- ggmap(get_googlemap(center = c(lon = -71.1, lat = 42.3),
 
@@ -42,9 +43,7 @@ graphic_GB_Google <- p + geom_point(aes(x = longitude, y = latitude), data = map
 
   labs(title = "Incidents of Gun Violence in Greater Boston 2014-2017",
 
-       subtitle = "Year: {current_frame}",
-
-       caption = "Source: City and County of San Francisco") +
+       subtitle = "Year: {current_frame}") +
 
   ggthemes::theme_map(base_size = 12)
 

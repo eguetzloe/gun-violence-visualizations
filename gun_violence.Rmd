@@ -12,6 +12,10 @@ library(tidyverse)
 library(readxl)
 library(janitor)
 library(plotly)
+library(reshape2)
+library(cowplot)
+library(tidyr)
+library(gt)
 
 a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")
 
@@ -22,6 +26,8 @@ d <- read_xlsx("raw-data/firearm-mortality-state.xlsx")
 join <- full_join(a, b)
 
 join2 <- full_join(join, d)
+
+join3 <- full_join(b, d)
 
 ```
 
@@ -36,9 +42,10 @@ mapping <- a %>%
   filter(year != 2018) %>%
   select(year, n_victims)
 
-plot1 <- ggplot(mapping, aes(x = year, y = n_victims)) +
-  geom_col() +
-  labs(x = "Year", y = "Number of Victims", title = "Gun Violence in Boston and the Greater Boston Area", caption = "2018 data not included because it only extends from January through March of 2018.")
+plot1 <- ggplot(mapping, aes(x = year, y = n_victims, fill = "orange")) +
+  geom_col(width = 0.4) +
+  labs(x = "Year", y = "Number of Victims", title = "Gun Violence in Boston and the Greater Boston Area", caption = "2018 data not included because it only extends from January through March of 2018.") +
+  theme(legend.position = "none")
 
 ggplotly(plot1)
 
@@ -53,9 +60,10 @@ mapping2 <- a %>%
   filter(year != 2018) %>%
   select(year, n_injured)
 
-plot2 <- ggplot(mapping2, aes(x = year, y = n_injured)) +
-  geom_col() +
-  labs(x = "Year", y = "Number of Victims Injured", title = "Gun-related Injuries in Boston and the Greater Boston Area")
+plot2 <- ggplot(mapping2, aes(x = year, y = n_injured, fill = "orange")) +
+  geom_col(width = 0.4) +
+  labs(x = "Year", y = "Number of Victims Injured", title = "Gun-related Injuries in Boston and the Greater Boston Area") +
+  theme(legend.position = "none")
 
 ggplotly(plot2)
 
@@ -71,9 +79,10 @@ mapping3 <- a %>%
   filter(year != 2018) %>%
   select(year, n_killed)
 
-plot3 <- ggplot(mapping3, aes(x = year, y = n_killed)) +
-  geom_col() +
-  labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area")
+plot3 <- ggplot(mapping3, aes(x = year, y = n_killed, fill = "orange")) +
+  geom_col(width = 0.4) +
+  labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area") +
+  theme(legend.position = "none")
 
 ggplotly(plot3)
 
@@ -83,15 +92,15 @@ ggplotly(plot3)
 
 regdata <- join2 %>%
   filter(state == "Massachusetts") %>%
-  filter(year %in% c(2013, 2014, 2015, 2016, 2017)) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
   select(deaths, lawtotal, year) 
   
 regression <- lm(deaths ~ year, data = regdata, family = "binomial")
 
 graph <- ggplot(regression, aes(x = year, y = deaths)) +
   geom_point() +
-  geom_smooth(method = "lm") +
-  ggtitle("Massachusetts Deaths from Gun Violence, 2013-2017") +
+  geom_smooth(method = "lm", color = "orange") +
+  ggtitle("Massachusetts Deaths from Gun Violence, 2014-2017") +
   xlab("Year") +
   ylab("Number of Deaths")
 
@@ -114,6 +123,22 @@ group <- mapping4 %>%
 
 ```{r}
 
+accumulate_by <- function(dat, var) {
+
+  var <- lazyeval::f_eval(var, dat)
+
+  lvls <- plotly:::getLevels(var)
+
+  dats <- lapply(seq_along(lvls), function(x) {
+
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+
+  })
+
+  dplyr::bind_rows(dats)
+
+}
+
 mapping5 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
   filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin")) %>%
@@ -124,6 +149,49 @@ mapping5 <- a %>%
   count(city_or_county, year)
 
 saveRDS(object = mapping5, file = "gun-violence-visualizations/violence_by_year.rds")
+
+```
+
+```{r}
+
+mapping6 <- a %>%
+   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  select(n_injured, n_killed, year)
+  
+#meltedmapping6 <- melt(mapping6)
+
+#ggplot(meltedmapping6, aes(, year,fill=variable))+
+     geom_bar(stat="identity",position="dodge")
+
+mapping6 %>%
+  gather("n_injured", -year) %>%
+  ggplot(aes(year, n_injured, fill = year)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme_bw()
+
+```
+
+```{r}
+
+filtered_b <- b %>%
+  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania")) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
+
+filtered_b2 <- b %>%
+  filter(state %in% c("Massachusetts", "California")) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
+
+```
+
+
+```{r}
+
+mapping7 <- join3 %>%
+  filter(state == "Massachusetts") %>%
+  select(year, lawtotal)
+
+gt(mapping7) %>%
+  labs(title = "Number of Massachusetts Gun Laws 2014-2017")
 
 ```
 
