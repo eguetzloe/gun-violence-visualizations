@@ -1,9 +1,20 @@
-
-
 library(shiny)
 library(tidyverse)
 library(plotly)
 library(shinythemes)
+library(janitor)
+library(reshape2)
+library(cowplot)
+library(tidyr)
+library(gt)
+
+mapping_victims <- readRDS("mapping.rds")
+
+mapping_injuries <- readRDS("mapping2.rds")
+
+mapping_deaths <- readRDS("mapping3.rds")
+
+regression_line <- readRDS("regression.rds")
 
 violence_by_year <- readRDS("violence_by_year.rds")
 
@@ -44,7 +55,7 @@ ui <- navbarPage(theme = shinytheme("united"),
                           p("One thing is clear from the data- gun violence incidents in Boston and the Greater Boston area rose over the course of the 4 years I examined. Though Boston still has much lower levels of violence in comparison to demographically similar cities such as Philadelphia and Milwaukee (which I was encouraged to compare to Boston by Dr. Deb Azrael at the Harvard Injury Control Research Center), it is concerning that Boston seems to be experiencing a continued rise in violence. One interesting finding, however, is that Boston has largely kept the same set of gun laws for the past 20 years, with its total number of laws remaining at 100 since 1999. It is difficult to isolate the main cause for these rising levels of gun violence, as information about the nature of the incidents is not always reported. Some interesting laws that are not implemented in Massachusetts, however, but have been implemented in the state of California are restrictions on firearm purchase and possession for some people with alcoholism, universal background checks required at points of transfer for handguns, firearm and handgun possession is prohibited for people with a history of a violent misdemeanor punishable by less than one year of imprisonment, and a waiting period is required on all firearm and handgun purchases from dealers. These laws could potentially be models for laws to implement in Massachusetts moving forwards because the Bay Area and San Francisco in California have recently experienced a significant decrease in levels of gun violence(for more information on this, check out my friend Yao Yu's project which specifically analyzes gun violence in this region).")))
 server <- function(input, output, session) {
     output$plot1 <- renderPlot(
-            ggplot(mapping, aes(x = year, y = n_victims, fill = "orange")) +
+            ggplot(mapping_victims, aes(x = year, y = n_victims, fill = "orange")) +
             geom_col(width = 0.4) +
                 theme(legend.position = "none") +
             labs(x = "Year", y = "Number of Victims", 
@@ -52,19 +63,19 @@ server <- function(input, output, session) {
         )
     
     output$plot2 <- renderPlot(
-        ggplot(mapping2, aes(x = year, y = n_injured, fill = "orange")) +
+        ggplot(mapping_injuries, aes(x = year, y = n_injured, fill = "orange")) +
             geom_col(width = 0.4) +
             theme(legend.position = "none") +
             labs(x = "Year", y = "Number of Victims Injured", title = "Gun-related Injuries in Boston and the Greater Boston Area")
     )
     output$plot3 <- renderPlot(
-        ggplot(mapping3, aes(x = year, y = n_killed, fill = "orange")) +
+        ggplot(mapping_deaths, aes(x = year, y = n_killed, fill = "orange")) +
             geom_col(width = 0.4) +
             theme(legend.position = "none")+
             labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area")
     )
     output$graph <- renderPlot(
-        ggplot(regression, aes(x = year, y = deaths)) +
+        ggplot(regression_line, aes(x = year, y = deaths)) +
             geom_point() +
             geom_smooth(method = "lm", color = "orange") +
             ggtitle("Massachusetts Deaths from Gun Violence, 2014-2017") +

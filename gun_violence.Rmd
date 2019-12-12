@@ -42,6 +42,8 @@ mapping <- a %>%
   filter(year != 2018) %>%
   select(year, n_victims)
 
+saveRDS(object = mapping, file = "gun-violence-visualizations/mapping.rds")
+
 plot1 <- ggplot(mapping, aes(x = year, y = n_victims, fill = "orange")) +
   geom_col(width = 0.4) +
   labs(x = "Year", y = "Number of Victims", title = "Gun Violence in Boston and the Greater Boston Area", caption = "2018 data not included because it only extends from January through March of 2018.") +
@@ -59,6 +61,8 @@ mapping2 <- a %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
   filter(year != 2018) %>%
   select(year, n_injured)
+
+saveRDS(object = mapping2, file = "gun-violence-visualizations/mapping2.rds")
 
 plot2 <- ggplot(mapping2, aes(x = year, y = n_injured, fill = "orange")) +
   geom_col(width = 0.4) +
@@ -79,6 +83,8 @@ mapping3 <- a %>%
   filter(year != 2018) %>%
   select(year, n_killed)
 
+saveRDS(object = mapping3, file = "gun-violence-visualizations/mapping3.rds")
+
 plot3 <- ggplot(mapping3, aes(x = year, y = n_killed, fill = "orange")) +
   geom_col(width = 0.4) +
   labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area") +
@@ -97,6 +103,8 @@ regdata <- join2 %>%
   
 regression <- lm(deaths ~ year, data = regdata, family = "binomial")
 
+saveRDS(object = regdata, file = "gun-violence-visualizations/regression.rds")
+
 graph <- ggplot(regression, aes(x = year, y = deaths)) +
   geom_point() +
   geom_smooth(method = "lm", color = "orange") +
@@ -114,6 +122,8 @@ mapping4 <- join2 %>%
   filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin")) %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia")) %>%
   mutate(city_or_county = ifelse(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"), "Greater Boston", city_or_county))
+
+saveRDS(object = mapping4, file = "gun-violence-visualizations/mapping4.rds")
 
 group <- mapping4 %>%
   group_by(city_or_county) %>%
@@ -149,49 +159,6 @@ mapping5 <- a %>%
   count(city_or_county, year)
 
 saveRDS(object = mapping5, file = "gun-violence-visualizations/violence_by_year.rds")
-
-```
-
-```{r}
-
-mapping6 <- a %>%
-   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
-  select(n_injured, n_killed, year)
-  
-#meltedmapping6 <- melt(mapping6)
-
-#ggplot(meltedmapping6, aes(, year,fill=variable))+
-     geom_bar(stat="identity",position="dodge")
-
-mapping6 %>%
-  gather("n_injured", -year) %>%
-  ggplot(aes(year, n_injured, fill = year)) +
-  geom_bar(position = "dodge", stat = "identity") +
-  theme_bw()
-
-```
-
-```{r}
-
-filtered_b <- b %>%
-  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania")) %>%
-  filter(year %in% c(2014, 2015, 2016, 2017))
-
-filtered_b2 <- b %>%
-  filter(state %in% c("Massachusetts", "California")) %>%
-  filter(year %in% c(2014, 2015, 2016, 2017))
-
-```
-
-
-```{r}
-
-mapping7 <- join3 %>%
-  filter(state == "Massachusetts") %>%
-  select(year, lawtotal)
-
-gt(mapping7) %>%
-  labs(title = "Number of Massachusetts Gun Laws 2014-2017")
 
 ```
 
