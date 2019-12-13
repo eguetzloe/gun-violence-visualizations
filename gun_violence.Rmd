@@ -17,11 +17,15 @@ library(cowplot)
 library(tidyr)
 library(gt)
 
-a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")
+a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx") %>%
+  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury, Milwaukee, Philadelphia")) 
 
-b <- read_xlsx("raw-data/firearm_restrictions_by_state.xlsx")
+b <- read_xlsx("raw-data/firearm_restrictions_by_state.xlsx") %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
 
-d <- read_xlsx("raw-data/firearm-mortality-state.xlsx")
+d <- read_xlsx("raw-data/firearm-mortality-state.xlsx") %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
 
 join <- full_join(a, b)
 
@@ -132,22 +136,6 @@ group <- mapping4 %>%
 ```
 
 ```{r}
-
-accumulate_by <- function(dat, var) {
-
-  var <- lazyeval::f_eval(var, dat)
-
-  lvls <- plotly:::getLevels(var)
-
-  dats <- lapply(seq_along(lvls), function(x) {
-
-    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
-
-  })
-
-  dplyr::bind_rows(dats)
-
-}
 
 mapping5 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
