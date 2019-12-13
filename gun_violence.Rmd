@@ -17,21 +17,21 @@ library(cowplot)
 library(tidyr)
 library(gt)
 
-a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx") %>%
-  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania")) %>%
-  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury, Milwaukee, Philadelphia")) 
+a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")%>%
+  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania", "California", "Illinois")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia", "Oakland", "Chicago"))
 
 b <- read_xlsx("raw-data/firearm_restrictions_by_state.xlsx") %>%
-  filter(year %in% c(2014, 2015, 2016, 2017))
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
+  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania", "California", "Illinois"))
 
 d <- read_xlsx("raw-data/firearm-mortality-state.xlsx") %>%
-  filter(year %in% c(2014, 2015, 2016, 2017))
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
+  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania", "California", "Illinois"))
 
 join <- full_join(a, b)
 
 join2 <- full_join(join, d)
-
-join3 <- full_join(b, d)
 
 ```
 
@@ -77,7 +77,7 @@ ggplotly(plot2)
 
 ```
 
-```{r}
+```{r Boston deaths}
 
 mapping3 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
@@ -98,7 +98,7 @@ ggplotly(plot3)
 
 ```
 
-```{r regression}
+```{r regression, warning=FALSE}
 
 regdata <- join2 %>%
   filter(state == "Massachusetts") %>%
@@ -120,11 +120,11 @@ ggplotly(graph)
 
 ```
 
-```{r}
+```{r Cleaning Data for Comparison}
 
 mapping4 <- join2 %>%
-  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin")) %>%
-  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia")) %>%
+  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin", "California", "Illinois")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia", "Oakland")) %>%
   mutate(city_or_county = ifelse(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"), "Greater Boston", city_or_county))
 
 saveRDS(object = mapping4, file = "gun-violence-visualizations/mapping4.rds")
@@ -135,16 +135,30 @@ group <- mapping4 %>%
 
 ```
 
-```{r}
+```{r Animated Graphic}
+
+accumulate_by <- function(dat, var) {
+  var <- lazyeval::f_eval(var, dat)
+  lvls <- plotly:::getLevels(var)
+  dats <- lapply(seq_along(lvls), function(x) {
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+  })
+  dplyr::bind_rows(dats)
+}
 
 mapping5 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
-  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin")) %>%
-  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia")) %>%
+  mutate(n_victims = n_killed + n_injured) %>%
+  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin", "California", "Illinois")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia", "Oakland", "Chicago")) %>%
   mutate(city_or_county = ifelse(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"), "Greater Boston", city_or_county)) %>%
-  filter(year != 2013) %>%
-  filter(year != 2018) %>%
-  count(city_or_county, year)
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
+  filter(n_victims >= 1) %>%
+  group_by(city_or_county, year) %>%
+  summarize(total_victims = sum(n_victims)) %>%
+  ungroup() %>%
+  mutate(year = as.integer(year)) %>%
+  accumulate_by(~year)
 
 saveRDS(object = mapping5, file = "gun-violence-visualizations/violence_by_year.rds")
 
