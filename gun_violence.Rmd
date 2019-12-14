@@ -17,17 +17,37 @@ library(cowplot)
 library(tidyr)
 library(gt)
 
-a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")%>%
+# I read in my main violence incidents dataset. I then mutated to create a
+# different year variable because initially, this dataset only had a date
+# variable with the specific day of the incident, making year-by-year
+# comparisons difficult. I also mutated to create a variable called n_victims,
+# which added the sum of people both killed and injured in a specific incident
+# of gun violence. I was forced to filter much of the data to allow my Rmd to
+# knit- the dataset was initially too large. I filtered for only the states and
+# cities that I specifically wanted to examine.
+
+a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx") %>%
   filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania", "California", "Illinois")) %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia", "Oakland", "Chicago"))
+
+# Here, I read in the dataset which included firearm restrictions for each
+# state. Again, I filtered out unnecessary states and years.
 
 b <- read_xlsx("raw-data/firearm_restrictions_by_state.xlsx") %>%
   filter(year %in% c(2014, 2015, 2016, 2017)) %>%
   filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania", "California", "Illinois"))
 
+# Finally, I read in a CDC dataset which included the total number of victims
+# for each state. My initial dataset only included the victims of each
+# individual incident of violence as opposed to totals for each state, which was
+# why I included this dataset as well. As before, I only filtered for the years
+# and states I was interested in.
+
 d <- read_xlsx("raw-data/firearm-mortality-state.xlsx") %>%
   filter(year %in% c(2014, 2015, 2016, 2017)) %>%
   filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania", "California", "Illinois"))
+
+# I joined all of my datasets for easier manipulation.
 
 join <- full_join(a, b)
 
@@ -36,78 +56,124 @@ join2 <- full_join(join, d)
 ```
 
 
-```{r plot 1}
+```{r Boston Total Victims}
+
+# I read in my first dataset of violence incidents. I filtered for only
+# Massachusetts and then filtered for the cities and counties that make up
+# Boston and the Greater Boston area. I also filtered for only the four years I
+# wanted to examine. I then selected the variables I wanted to plot.
 
 mapping <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
   mutate(n_victims = n_killed + n_injured) %>%
   filter(state == "Massachusetts") %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
-  filter(year != 2018) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
   select(year, n_victims)
 
+# I saved the data as an Rds.
+
 saveRDS(object = mapping, file = "gun-violence-visualizations/mapping.rds")
+
+# I created a bar plot, with year on the x axis and victims on the y axis. I set
+# fill to orange to stick with my initial theme. I changed titles and column
+# labels using labs, and removed the legend.
 
 plot1 <- ggplot(mapping, aes(x = year, y = n_victims, fill = "orange")) +
   geom_col(width = 0.4) +
   labs(x = "Year", y = "Number of Victims", title = "Gun Violence in Boston and the Greater Boston Area", caption = "2018 data not included because it only extends from January through March of 2018.") +
   theme(legend.position = "none")
 
+# I made the ggplot into a plotly.
+
 ggplotly(plot1)
 
 ```
 
-```{r plot 2}
+```{r Boston Injuries}
+
+# For this graph, I took much the same approach as the graph above. The only
+# main difference was that I selected n_injured rather than n_victims for this
+# graph.
 
 mapping2 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  mutate(n_victims = n_killed + n_injured) %>%
   filter(state == "Massachusetts") %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
-  filter(year != 2018) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
   select(year, n_injured)
 
+# I saved to an Rds.
+
 saveRDS(object = mapping2, file = "gun-violence-visualizations/mapping2.rds")
+
+# I made the same bar plot as before, but placed n_injured on the y axis this time.
 
 plot2 <- ggplot(mapping2, aes(x = year, y = n_injured, fill = "orange")) +
   geom_col(width = 0.4) +
   labs(x = "Year", y = "Number of Victims Injured", title = "Gun-related Injuries in Boston and the Greater Boston Area") +
   theme(legend.position = "none")
 
+# I made the ggplot into a ggplotly.
+
 ggplotly(plot2)
 
 ```
 
-```{r Boston deaths}
+```{r Boston Deaths}
+
+# This process is again just like the first graph. For this graph, however, I selected n_killed to see total deaths.
 
 mapping3 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  mutate(n_victims = n_killed + n_injured) %>%
   filter(state == "Massachusetts") %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
-  filter(year != 2013) %>%
-  filter(year != 2018) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017)) %>%
   select(year, n_killed)
 
+# I saved as an Rds.
+
 saveRDS(object = mapping3, file = "gun-violence-visualizations/mapping3.rds")
+
+# I created a bar plot as before, but with n_killed on the y axis.
 
 plot3 <- ggplot(mapping3, aes(x = year, y = n_killed, fill = "orange")) +
   geom_col(width = 0.4) +
   labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area") +
   theme(legend.position = "none")
 
+# I turned the ggplot into a plotly.
+
 ggplotly(plot3)
 
 ```
 
-```{r regression, warning=FALSE}
+```{r Regression Line, warning=FALSE}
+
+# For this graph, I piped in the joined dataset because I wanted to see the
+# total amount of deaths in Massachusetts. I filtered only for Massachusetts,
+# then filtered for the four year period I wanted to examine. I selected deaths
+# and years since these were the variables I wanted to plot.
 
 regdata <- join2 %>%
   filter(state == "Massachusetts") %>%
   filter(year %in% c(2014, 2015, 2016, 2017)) %>%
-  select(deaths, lawtotal, year) 
+  select(deaths, year) 
+
+# I made a linear regression of deaths explained by year.
   
 regression <- lm(deaths ~ year, data = regdata, family = "binomial")
 
+# I saved this as an Rds.
+
 saveRDS(object = regdata, file = "gun-violence-visualizations/regression.rds")
+
+# I created a line of best fit for this data, with year on the x axis and deaths
+# on the y axis. I created a line of best fit with a combination of geom_point
+# and geom_smooth, setting my method as lm and the color as orange to fit with
+# the rest of the theme. I gave the graphic a new title and column labels.
 
 graph <- ggplot(regression, aes(x = year, y = deaths)) +
   geom_point() +
@@ -116,26 +182,18 @@ graph <- ggplot(regression, aes(x = year, y = deaths)) +
   xlab("Year") +
   ylab("Number of Deaths")
 
+# I made the ggplot into a plotly.
+
 ggplotly(graph)
 
 ```
 
-```{r Cleaning Data for Comparison}
 
-mapping4 <- join2 %>%
-  filter(state %in% c("Massachusetts", "Pennsylvania", "Wisconsin", "California", "Illinois")) %>%
-  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia", "Oakland")) %>%
-  mutate(city_or_county = ifelse(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"), "Greater Boston", city_or_county))
+```{r Animated Comparison Graphic}
 
-saveRDS(object = mapping4, file = "gun-violence-visualizations/mapping4.rds")
-
-group <- mapping4 %>%
-  group_by(city_or_county) %>%
-  count()
-
-```
-
-```{r Animated Graphic}
+# I was suggested this function by Yao Yu, who sent me this link:
+# https://plot.ly/r/cumulative-animations/. This code is necessary for animating
+# a plotly graphic.
 
 accumulate_by <- function(dat, var) {
   var <- lazyeval::f_eval(var, dat)
@@ -145,6 +203,19 @@ accumulate_by <- function(dat, var) {
   })
   dplyr::bind_rows(dats)
 }
+
+# I read in my first dataset, filtering for the states and cities I wanted to
+# compare. I mutated to create a new variable called Greater Boston, which
+# combined all the cities and counties of Boston and the greater Boston area for
+# an easier comparison with other cities. I filtered for only the years I wanted
+# to examine, then filtered for incidents where at least 1 victim was injured or
+# killed because for some reason, the data seemed to include incidents where no
+# one was injured or killed. I grouped by city_or_county and year then used a
+# summarize to create a total_victims variable, which added up the total number
+# of gun violence victims for every state. I then ungrouped- initially I forgot
+# to take this step, but without it my code did not run properly. Finally, I
+# mutated to make year an integer because the code threw an error without year
+# being an integer, and I accumulated by year.
 
 mapping5 <- a %>%
   mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
@@ -159,6 +230,8 @@ mapping5 <- a %>%
   ungroup() %>%
   mutate(year = as.integer(year)) %>%
   accumulate_by(~year)
+
+# I saved the data as an Rds.
 
 saveRDS(object = mapping5, file = "gun-violence-visualizations/violence_by_year.rds")
 

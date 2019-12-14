@@ -13,21 +13,31 @@ library(ggmap)
 library(ggthemes)
 library(gganimate)
 library(curl)
+library(readxl)
 
-a <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx")
+# I read in the first dataset.
+
+a2 <- read_xlsx("raw-data/gun-violence-data_01-2013_03-2018.xlsx") %>%
+  mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
 
 ```
 
-```{r}
+```{r Animated Map}
 
-map1 <- a %>%
-  mutate(year = format(as.Date(a$date, format = "%Y-%M-%d"), "%Y")) %>%
-  filter(year != 2013) %>%
-  filter(year != 2018) %>%
+# I piped in my data, then filtered for Massachusetts and the cities I was interested in.
+
+map1 <- a2 %>%
   filter(state == "Massachusetts") %>%
   filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury"))
 
+# I registered the Google Key API.
+
 register_google(key = "AIzaSyBsl9mcJqkwdVlx3YOLaO8uhsnR9k-9XSc")
+
+# I used ggmap with the average coordinates of Boston to create a map of the
+# area, zooming in to the level 11 since this seemed to be the best distance for
+# viewing the points on the map.
 
 p <- ggmap(get_googlemap(center = c(lon = -71.1, lat = 42.3),
 
@@ -36,6 +46,10 @@ p <- ggmap(get_googlemap(center = c(lon = -71.1, lat = 42.3),
                     maptype ='roadmap',
 
                     color = 'color'))
+
+# I used geom_point plus my cleaned data to create the graphic, with longitude
+# on x and latitude on y. I set transition by year and then created a new title
+# and subtitle.
 
 graphic_GB_Google <- p + geom_point(aes(x = longitude, y = latitude), data = map1, size = 0.5) +
 
@@ -46,6 +60,8 @@ graphic_GB_Google <- p + geom_point(aes(x = longitude, y = latitude), data = map
        subtitle = "Year: {current_frame}") +
 
   ggthemes::theme_map(base_size = 12)
+
+# I saved the graphic as a gif.
 
 anim_save("graphic_GB_Google.gif", graphic_GB_Google, "gun-violence-visualizations/")
 

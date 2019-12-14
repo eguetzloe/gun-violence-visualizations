@@ -1,0 +1,109 @@
+---
+title: "Why is gun violence in Boston on the rise?"
+author: "Erin Guetzloe"
+date: "12/12/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(plotly)
+library(reshape2)
+library(cowplot)
+library(tidyr)
+library(gt)
+
+a1 <- read_xlsx("gun-violence-data_01-2013_03-2018.xlsx") %>%
+  filter(state %in% c("Massachusetts", "Wisconsin", "Pennsylvania")) %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury", "Milwaukee", "Philadelphia"))
+
+b1 <- read_xlsx("firearm_restrictions_by_state.xlsx") %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
+
+d1 <- read_xlsx("firearm-mortality-state.xlsx") %>%
+  filter(year %in% c(2014, 2015, 2016, 2017))
+
+join3 <- full_join(a1, b1)
+
+join4 <- full_join(join3, d1)
+
+
+```
+
+# Abstract
+Gun violence in the United States has become a rampant public health epidemic, costing the lives of thousands of Americans each year. Since 2015, there have been over 300 mass shootings every year. In light of these horrific statistics, policymakers are naturally looking for certain states who have seemed to experience success in decreasing levels of gun violence. One of the states which some analysts have called a "model" for successful gun regulation is Massachusetts. Massachusetts has some of the lowest levels of gun violence in the United States and has pursued a strict set of regulations on gun purchases, transfers, and ownership. Yet in recent years, some analysts have noticed a worrying trend: the city of Boston has started to experience a rise in levels of gun violence. Since Massachusetts has seemingly implemented such an aggressive set of tactics to prevent gun violence, this increase in Boston gun violence naturally raises the question why are these increases occurring? This project attempts to examine current levels of gun violence in Boston over the years 2014 to 2018. I compared Boston to other demographically similar cities to see whether Boston's gun violence trends are occurring in other places. Then, I created a map showing the locations of Boston's gun violence over the 4 years I examined. Finally, I sought out laws that are currently being implemented in California but not in Massachusetts, since California's Bay Area has recently experienced a significant decrease in levels of gun violence. I hope that the findings of this project could provide a model for Massachusetts policymakers seeking to stem the tide of violence in Boston.
+
+```{r}
+
+mapping <- a1 %>%
+  mutate(year = format(as.Date(a1$date, format = "%Y-%M-%d"), "%Y")) %>%
+  mutate(n_victims = n_killed + n_injured) %>%
+  filter(state == "Massachusetts") %>%
+  filter(city_or_county %in% c("Allston", "Arlington", "Boston", "Brighton", "Brookline", "Cambridge", "Cambridge (Cambridgeport)", "Charlestown", "Dorchester", "Dorchester Center", "Hyde Park", "Malden", "Mattapan", "Medford", "Roslindale", "Roxbury", "Somerville", "South Boston", "Watertown", "West Roxbury")) %>%
+  filter(year != 2018) %>%
+  select(year, n_victims)
+
+saveRDS(object = mapping, file = "gun-violence-visualizations/mapping.rds")
+
+plot1 <- ggplot(mapping, aes(x = year, y = n_victims, fill = "orange")) +
+  geom_col(width = 0.4) +
+  labs(x = "Year", y = "Number of Victims", title = "Gun Violence in Boston and the Greater Boston Area", caption = "2018 data not included because it only extends from January through March of 2018.") +
+  theme(legend.position = "none")
+
+ggplotly(plot1)
+
+
+```
+
+```{r}
+output$violence_graphs <- renderPlot({
+                if(input$violence_type == "Deaths"){
+                    ggplot(mapping_deaths, aes(x = year, y = n_killed, fill = "orange")) +
+                        geom_col(width = 0.4) +
+                        theme(legend.position = "none")+
+                        labs(x = "Year", y = "Number of Victims Killed", title = "Gun-related Deaths in Boston and the Greater Boston Area")
+                }
+                else if(input$violence_type == "Injuries"){
+                    ggplot(mapping_injuries, aes(x = year, y = n_injured, fill = "orange")) +
+                        geom_col(width = 0.4) +
+                        theme(legend.position = "none") +
+                        labs(x = "Year", y = "Number of Victims Injured", title = "Gun-related Injuries in Boston and the Greater Boston Area")
+                }
+                else if(input$violence_type == "Total Victims"){
+                    ggplot(mapping_victims, aes(x = year, y = n_victims, fill = "orange")) +
+                        geom_col(width = 0.4) +
+                        theme(legend.position = "none") +
+                        labs(x = "Year", y = "Number of Victims", 
+                             title = "Gun Violence in Boston and the Greater Boston Area")
+                }
+            }) 
+
+br(),
+                          br(),
+                          plotOutput("graph")),
+                          sidebarLayout(
+                              sidebarPanel(
+                                  radioButtons(inputId = "violence_type",
+                                               label = "Select deaths, injuries, or total victims", 
+                                               choices = c("Deaths", "Injuries", "Total Victims"))
+                              ),
+                              mainPanel(
+                                  plotOutput("violence_graphs")
+                              )),
+
+titlePanel("Greater Boston Gun Violence Compared With Other US Cities"),
+                          sidebarLayout(
+                              sidebarPanel(
+                                  selectInput("city_or_county",label = strong("city_or_county"),
+                                              choices = unique(mapping5$city_or_county),
+                                              selected = "Greater Boston",
+                                              multiple = TRUE
+                                  )),
+                              mainPanel(
+                                  plotOutput("dropdown")))),
+```
+
